@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Focus Cycle Timer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        
+        <div class="time-selector">
+            <label for="total-time">Total Study Time:</label>
+            <select id="total-time">
+                <option value="30">0.5 Hour (30 min)</option>
+                <option value="60">1 Hour (60 min)</option>
+                <option value="90">1.5 Hours (90 min)</option>
+                <option value="120" selected>2 Hours (120 min)</option>
+                <option value="150">2.5 Hours (150 min)</option>
+                <option value="180">3 Hours (180 min)</option>
+                <option value="210">3.5 Hours (210 min)</option>
+                <option value="240">4 Hours (240 min)</option>
+                <option value="270">4.5 Hours (270 min)</option>
+                <option value="300">5 Hours (300 min)</option>
+            </select>
+        </div>
+        
+        <h1 id="timer-display">20:00</h1>
+        <p id="cycle-status">Loading...</p>
+        
+        <div class="controls">
+            <button id="start-btn">Start</button> 
+            <button id="stop-btn">Stop & Reset</button>
+        </div>
+    </div>
+
+    <audio id="alarm-sound" src="alarm.mp3" preload="auto"></audio> 
+    <script src="script.js"></script>
+</body>
+</html>

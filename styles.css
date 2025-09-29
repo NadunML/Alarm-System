@@ -1,0 +1,98 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: white;
+    padding: 30px 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); 
+    text-align: center;
+    width: 320px; 
+}
+
+/* --- Time Selector Styles --- */
+.time-selector {
+    margin-bottom: 25px;
+    font-size: 1.1em;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-selector label {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+#total-time {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+    width: 100%; 
+    box-sizing: border-box; 
+    appearance: none; 
+    background-color: #fff;
+    cursor: pointer;
+}
+
+/* --- Timer Display Styles --- */
+#timer-display {
+    font-size: 6.5em; 
+    margin: 10px 0;
+    color: #333;
+    font-weight: 700;
+}
+
+#cycle-status {
+    font-size: 1.2em;
+    color: #007bff; 
+    margin-bottom: 25px;
+    font-weight: 500;
+}
+
+/* --- Control Buttons Styles --- */
+.controls {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px; 
+}
+
+.controls button {
+    flex-grow: 1; 
+    background-color: #28a745; 
+    color: white;
+    border: none;
+    padding: 12px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background-color 0.3s, opacity 0.3s;
+}
+
+#stop-btn {
+    background-color: #dc3545; 
+}
+
+.controls button:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.controls button:active:not(:disabled) {
+    opacity: 0.7;
+}
+
+.controls button:disabled {
+    background-color: #6c757d; 
+    cursor: not-allowed;
+    opacity: 0.6;
+}
