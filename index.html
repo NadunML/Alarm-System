@@ -3,38 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Focus Cycle Timer</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Study Focuser</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        
-        <div class="time-selector">
-            <label for="total-time">Total Study Time:</label>
-            <select id="total-time">
-                <option value="30">0.5 Hour (30 min)</option>
-                <option value="60">1 Hour (60 min)</option>
-                <option value="90">1.5 Hours (90 min)</option>
-                <option value="120" selected>2 Hours (120 min)</option>
-                <option value="150">2.5 Hours (150 min)</option>
-                <option value="180">3 Hours (180 min)</option>
-                <option value="210">3.5 Hours (210 min)</option>
-                <option value="240">4 Hours (240 min)</option>
-                <option value="270">4.5 Hours (270 min)</option>
-                <option value="300">5 Hours (300 min)</option>
-            </select>
-        </div>
-        
-        <h1 id="timer-display">20:00</h1>
-        <p id="cycle-status">Loading...</p>
-        
-        <div class="controls">
-            <button id="start-btn">Start</button> 
-            <button id="stop-btn">Stop & Reset</button>
-        </div>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>Study Focuser - <i>Improve Your Productivity</i></h1>
+            </div>
+            
+        </header>
+
+        <main class="main-content">
+            <div class="timer-card">
+                <div class="timer-display">
+                    <div class="timer-circle">
+                        <svg class="progress-ring" width="280" height="280">
+                            <circle class="progress-ring-background" stroke-width="8" fill="transparent" r="126" cx="140" cy="140"/>
+                            <circle class="progress-ring-circle" stroke-width="8" fill="transparent" r="126" cx="140" cy="140"/>
+                        </svg>
+                        <div class="timer-text">
+                            <span id="timer-display">20:00</span>
+                            <p id="cycle-status">Ready to Start</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <div class="primary-controls">
+                        <button id="start-btn" class="btn btn-primary">
+                            <i class="fas fa-play"></i>
+                            <span>Start Focus</span>
+                        </button>
+                        <button id="stop-btn" class="btn btn-secondary">
+                            <i class="fas fa-stop"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+
+                    <div class="secondary-controls" style="display: none;">
+                        <button id="volume-down-btn" class="btn btn-icon">
+                            <i class="fas fa-volume-down"></i>
+                        </button>
+                        <button id="music-toggle-btn" class="btn btn-music">
+                            <i class="fas fa-music"></i>
+                            <span>Play Music</span>
+                        </button>
+                        <button id="volume-up-btn" class="btn btn-icon">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-panel">
+                <div class="setting-group">
+                    <div class="setting-header">
+                        <i class="fas fa-clock"></i>
+                        <h3>Session Settings</h3>
+                    </div>
+                    <div class="time-selector">
+                        <label for="total-time">Total Study Time</label>
+                        <div class="custom-select">
+                            <select id="total-time">
+                                <option value="30">30 Minutes</option>
+                                <option value="60">1 Hour</option>
+                                <option value="90">1.5 Hours</option>
+                                <option value="120" selected>2 Hours</option>
+                                <option value="150">2.5 Hours</option>
+                                <option value="180">3 Hours</option>
+                                <option value="210">3.5 Hours</option>
+                                <option value="240">4 Hours</option>
+                                <option value="270">4.5 Hours</option>
+                                <option value="300">5 Hours</option>
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-header">
+                        <i class="fas fa-headphones"></i>
+                        <h3>Focus Music</h3>
+                    </div>
+                    <div class="youtube-input">
+                        <label for="youtube-link">YouTube Music Link</label>
+                        <div class="input-with-icon">
+                            <i class="fab fa-youtube"></i>
+                            <input type="text" id="youtube-link" placeholder="Paste YouTube link or ID here">
+                        </div>
+                        <small>Only one track needed - it will loop automatically</small>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <audio id="alarm-sound" src="alarm.mp3" preload="auto"></audio> 
+    <div id="video-player-container"></div>
+    <audio id="alarm-sound" src="alarm.mp3" preload="auto"></audio>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="script.js"></script>
 </body>
 </html>
