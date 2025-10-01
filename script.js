@@ -1,11 +1,10 @@
-// Cycle Configuration
+//Cycle Configuration 
 const TIME_UNIT = 30; 
-const STUDY_TIME_UNIT = 20 * 60; // 20 minutes study
-const REVIEW_TIME = 5 * 60;      // 5 minutes review  
-const BREAK_TIME = 5 * 60;       // 5 minutes break
-const PHASE_TRANSITION_DELAY = 2000; 
+const STUDY_TIME_UNIT = 25 * 60 ; // 25 minutes study
+const BREAK_TIME = 5 * 60 ;       // 5 minutes break
+const PHASE_TRANSITION_DELAY = 4000; 
 
-// Global Variables
+//Global Variables
 let totalTimeMinutes = 120; 
 let totalCycles = 4;        
 let cyclesCompleted = 0;    
@@ -17,8 +16,10 @@ let isMusicPlaying = false;
 let currentVolume = 50; 
 let youtubePlayer = null;
 let isPlayerReady = false;
+let userManuallyPaused = false;
+let currentPlaybackTime = 0;
 
-// DOM Elements
+//DOM Elements
 const display = document.getElementById('timer-display');
 const statusDisplay = document.getElementById('cycle-status');
 const startBtn = document.getElementById('start-btn');
@@ -32,23 +33,18 @@ const volumeUpBtn = document.getElementById('volume-up-btn');
 const volumeDownBtn = document.getElementById('volume-down-btn');
 const secondaryControls = document.querySelector('.secondary-controls');
 
-// YouTube Player API Functions
+//YouTube Player API Functions
 window.onYouTubeIframeAPIReady = function() {
     console.log("✅ YouTube API Ready - Player can be created");
-    // Auto-load player if there's already a YouTube link
     if (youtubeLinkInput.value.trim()) {
         loadVideoPlayer();
     }
 };
 
-// Improved video ID extraction
 function getVideoId(url) {
     if (!url) return null;
-    
-    // Remove any extra spaces
     url = url.trim();
     
-    // Handle various YouTube URL formats
     const patterns = [
         /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^#\&\?]{11})/,
         /^([a-zA-Z0-9_-]{11})$/
@@ -74,6 +70,10 @@ function updateMusicControlsVisibility() {
         musicToggleBtn.style.display = 'inline-block';
         volumeUpBtn.style.display = 'inline-block';
         volumeDownBtn.style.display = 'inline-block';
+        
+        musicToggleBtn.disabled = false;
+        volumeUpBtn.disabled = false;
+        volumeDownBtn.disabled = false;
     } else {
         secondaryControls.style.display = 'none';
         musicToggleBtn.style.display = 'none';
@@ -99,7 +99,6 @@ function loadVideoPlayer() {
         return false;
     }
 
-    // Clear previous player
     videoContainer.innerHTML = '<div id="youtube-player"></div>';
     
     try {
@@ -137,10 +136,10 @@ function onPlayerReady(event) {
     event.target.setVolume(currentVolume);
     updateMusicControlsVisibility();
     
-    // Update button text
     musicToggleBtn.innerHTML = '<i class="fas fa-play"></i> Play Music';
     musicToggleBtn.classList.remove('playing');
     isMusicPlaying = false;
+    userManuallyPaused = false;
     
     showMessage("Music player ready! Click 'Play Music' to start", "success");
 }
@@ -154,7 +153,10 @@ function onPlayerStateChange(event) {
             musicToggleBtn.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
             musicToggleBtn.classList.add('playing');
             statusDisplay.classList.add('playing-music');
-            showMessage("Music is now playing", "success");
+            userManuallyPaused = false;
+            
+            //Start tracking playback time when music plays
+            startPlaybackTracking();
             break;
             
         case YT.PlayerState.PAUSED:
@@ -162,6 +164,9 @@ function onPlayerStateChange(event) {
             musicToggleBtn.innerHTML = '<i class="fas fa-play"></i> Play Music';
             musicToggleBtn.classList.remove('playing');
             statusDisplay.classList.remove('playing-music');
+            
+            //Stop tracking playback time when music is paused
+            stopPlaybackTracking();
             break;
             
         case YT.PlayerState.ENDED:
@@ -170,19 +175,46 @@ function onPlayerStateChange(event) {
             musicToggleBtn.classList.remove('playing');
             statusDisplay.classList.remove('playing-music');
             console.log("🔄 Music ended, restarting...");
-            // Auto-restart if in study phase
-            if (currentPhase === 'study' && isRunning) {
-                setTimeout(() => youtubePlayer.playVideo(), 1000);
+            
+            //Reset playback time when music ends
+            currentPlaybackTime = 0;
+            stopPlaybackTracking();
+            
+            if (isRunning && !userManuallyPaused) {
+                setTimeout(() => {
+                    if (youtubePlayer && youtubePlayer.playVideo) {
+                        youtubePlayer.playVideo();
+                    }
+                }, 1000);
             }
             break;
-            
-        case YT.PlayerState.BUFFERING:
-            console.log("⏳ Music buffering...");
-            break;
-            
-        case YT.PlayerState.CUED:
-            console.log("✅ Music cued and ready");
-            break;
+    }
+}
+
+//Function to track current playback time
+let playbackInterval;
+function startPlaybackTracking() {
+    playbackInterval = setInterval(() => {
+        if (youtubePlayer && youtubePlayer.getCurrentTime) {
+            currentPlaybackTime = youtubePlayer.getCurrentTime();
+            console.log("⏱️ Current playback time:", currentPlaybackTime);
+        }
+    }, 1000); //Update every second
+}
+
+// Function to stop tracking playback time
+function stopPlaybackTracking() {
+    if (playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+    }
+}
+
+// Function to seek to saved playback time
+function resumeFromLastPosition() {
+    if (youtubePlayer && youtubePlayer.seekTo && currentPlaybackTime > 0) {
+        console.log("⏩ Resuming from:", currentPlaybackTime, "seconds");
+        youtubePlayer.seekTo(currentPlaybackTime, true);
     }
 }
 
@@ -200,23 +232,15 @@ function getStateName(state) {
 
 function onPlayerError(event) {
     console.error("❌ YouTube Player Error:", event.data);
-    const errorMessages = {
-        2: "Invalid video ID",
-        5: "HTML5 player error",
-        100: "Video not found",
-        101: "Video not embeddable",
-        150: "Video not embeddable"
-    };
-    const message = errorMessages[event.data] || "Unknown error occurred";
-    showMessage(`Music error: ${message}`, "error");
+    showMessage("Error loading music video", "error");
 }
 
+//MANUAL music control (user clicks play/pause)
 function playMusic() {
     if (!youtubePlayer || !isPlayerReady) {
         console.log("⏳ Player not ready, attempting to load...");
         showMessage("Loading music player...", "info");
         if (loadVideoPlayer()) {
-            // Wait a bit for player to initialize
             setTimeout(() => {
                 if (youtubePlayer && youtubePlayer.playVideo) {
                     console.log("🎵 Attempting to play music after loading");
@@ -228,7 +252,14 @@ function playMusic() {
     }
     
     try {
-        console.log("🎵 Playing music...");
+        console.log("🎵 MANUALLY playing music...");
+        userManuallyPaused = false;
+        
+        // Resume from last position if available
+        if (currentPlaybackTime > 0) {
+            resumeFromLastPosition();
+        }
+        
         youtubePlayer.playVideo();
     } catch (error) {
         console.error("❌ Error playing music:", error);
@@ -236,11 +267,13 @@ function playMusic() {
     }
 }
 
+//MANUAL pause (user clicks pause)
 function pauseMusic() {
     if (!youtubePlayer || !isPlayerReady) return;
     
     try {
-        console.log("⏸️ Pausing music...");
+        console.log("⏸️ MANUALLY pausing music...");
+        userManuallyPaused = true;
         youtubePlayer.pauseVideo();
     } catch (error) {
         console.error("❌ Error pausing music:", error);
@@ -249,19 +282,18 @@ function pauseMusic() {
 
 function toggleMusic() {
     console.log("🎵 Toggle music called, isMusicPlaying:", isMusicPlaying);
+    console.log("🎵 User manually paused:", userManuallyPaused);
     
     if (!youtubePlayer || !isPlayerReady) {
         console.log("⏳ Player not ready, loading...");
         showMessage("Loading music player...", "info");
         if (loadVideoPlayer()) {
-            // Wait for player to be ready then play
             const waitForReady = setInterval(() => {
                 if (isPlayerReady) {
                     clearInterval(waitForReady);
                     playMusic();
                 }
             }, 100);
-            // Timeout after 5 seconds
             setTimeout(() => {
                 clearInterval(waitForReady);
                 showMessage("Music player timeout. Please try again.", "error");
@@ -300,9 +332,29 @@ function changeVolume(direction) {
     }
 }
 
-// Utility Functions
+// NEW: Function to play completion alarm
+function playCompletionAlarm() {
+    try {
+        console.log("🎉 Playing completion alarm!");
+        alarmSound.currentTime = 0;
+        alarmSound.play().then(() => {
+            console.log("✅ Completion alarm started playing");
+            // Play the alarm for longer duration (8 seconds)
+            setTimeout(() => {
+                alarmSound.pause();
+                alarmSound.currentTime = 0;
+                console.log("⏹️ Completion alarm stopped");
+            }, 8000);
+        }).catch(e => {
+            console.log("❌ Completion alarm play failed:", e);
+        });
+    } catch (error) {
+        console.log("❌ Completion alarm error:", error);
+    }
+}
+
+//Utility Functions
 function showMessage(message, type = "info") {
-    // Create a temporary message display
     let messageDiv = document.getElementById('message-display');
     if (!messageDiv) {
         messageDiv = document.createElement('div');
@@ -335,7 +387,6 @@ function showMessage(message, type = "info") {
     messageDiv.style.color = 'white';
     messageDiv.style.opacity = '1';
     
-    // Auto-hide after 3 seconds
     setTimeout(() => {
         messageDiv.style.opacity = '0';
         setTimeout(() => {
@@ -346,7 +397,7 @@ function showMessage(message, type = "info") {
     }, 3000);
 }
 
-// Core Timer Logic
+//Core Timer Logic
 function calculateCycles() {
     if (timeSelector) {
         totalTimeMinutes = parseInt(timeSelector.value); 
@@ -362,15 +413,12 @@ function calculateCycles() {
 function formatTime(totalSeconds) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    const formattedMinutes = String(minutes).padStart(2, '0');
-    const formattedSeconds = String(seconds).padStart(2, '0');
-    return `${formattedMinutes}:${formattedSeconds}`;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function getPhaseName(phase) {
-    if (phase === 'study') return 'STUDY!!';
-    if (phase === 'review') return 'REVIEW !!';
-    return 'BREAK TIME'; 
+    if (phase === 'study') return 'Study!!';
+    return 'Interval!!'; // Only study and break phases
 }
 
 function updateDisplay() {
@@ -380,20 +428,15 @@ function updateDisplay() {
     
     updateMusicControlsVisibility();
     
-    // Auto-play/pause music based on phase
-    if (isRunning && youtubePlayer && isPlayerReady) {
-        if (currentPhase === 'study' && !isMusicPlaying) {
-            console.log("🎵 Auto-playing music for study phase");
-            playMusic();
-        } else if (currentPhase !== 'study' && isMusicPlaying) {
-            console.log("⏸️ Auto-pausing music for break phase");
-            pauseMusic();
-        }
+    //AUTO-PLAY music only during study phase AND if user hasn't manually paused
+    if (isRunning && youtubePlayer && isPlayerReady && currentPhase === 'study' && !isMusicPlaying && !userManuallyPaused) {
+        console.log("🎵 AUTO-playing music for study phase");
+        playMusic();
     }
 }
 
 function nextPhase() {
-    // Play alarm sound
+    // Play alarm for phase transition
     try {
         alarmSound.currentTime = 0;
         alarmSound.play().catch(e => console.log("Alarm sound play failed:", e));
@@ -402,41 +445,65 @@ function nextPhase() {
     }
 
     let isFinished = false;
-    
-    // Pause music during transitions
-    pauseMusic();
 
-    // Phase transitions
+    //Phase transitions - Only study and break phases
     if (currentPhase === 'study') {
-        currentPhase = 'review';
-        currentSeconds = REVIEW_TIME;
-        showMessage("Review Time! Take notes", "info");
-    } else if (currentPhase === 'review') {
         cyclesCompleted++; 
         if (cyclesCompleted < totalCycles) {
             currentPhase = 'break';
             currentSeconds = BREAK_TIME;
-            showMessage("Break Time! Relax for a bit", "success");
+            showMessage("Break Time! Relax for a bit");
+            
+            // Auto-pause music during break time
+            if (youtubePlayer && isPlayerReady && isMusicPlaying) {
+                console.log("⏸️ Auto-pausing music for break time");
+                youtubePlayer.pauseVideo();
+            }
+            
         } else {
             isFinished = true; 
         }
     } else {
         currentPhase = 'study';
         currentSeconds = STUDY_TIME_UNIT;
-        showMessage("Study Time! Focus mode activated", "info");
+        showMessage("Study Time! Focus mode activated");
+        
+        //Reset manual pause when starting new study session
+        userManuallyPaused = false;
+        
+        // Auto-resume music from last position when study starts
+        if (youtubePlayer && isPlayerReady && !isMusicPlaying && !userManuallyPaused) {
+            console.log("🎵 Auto-resuming music for study time from position:", currentPlaybackTime);
+            setTimeout(() => {
+                resumeFromLastPosition();
+                youtubePlayer.playVideo();
+            }, 500);
+        }
     }
     
     if (isFinished) {
-        resetTimer(true); 
+        // ⭐⭐ CHANGED: Play completion alarm before resetting timer
+        console.log("🎉 Session completed! Playing completion alarm...");
+        playCompletionAlarm();
+        
+        // Show completion message immediately
+        display.textContent = "DONE!";
+        statusDisplay.textContent = `${totalTimeMinutes/60} hrs Done! GREAT! 🥳`;
+        showMessage("Session completed! Great job! 🎉");
+        
+        // Reset timer after alarm plays
+        setTimeout(() => {
+            resetTimer(true);
+        }, 3000);
         return;
     }
 
     setTimeout(() => {
-        alarmSound.pause();
+        // REMOVED: alarmSound.pause() - Let alarm play fully
         alarmSound.currentTime = 0;
         updateDisplay();
         startTimer(); 
-    }, PHASE_TRANSITION_DELAY); 
+    }, 4000); 
 }
 
 function tick() {
@@ -459,7 +526,6 @@ function startTimer() {
         updateDisplay();
     }
     
-    // Load YouTube player if music link is provided
     if (youtubeLinkInput.value.trim().length > 0 && !youtubePlayer) {
         console.log("🎵 Starting timer with music");
         loadVideoPlayer();
@@ -471,10 +537,14 @@ function startTimer() {
     timeSelector.disabled = true; 
     youtubeLinkInput.disabled = true; 
     
+    musicToggleBtn.disabled = false;
+    volumeUpBtn.disabled = false;
+    volumeDownBtn.disabled = false;
+    
     display.classList.add('pulse');
     
     timerInterval = setInterval(tick, 1000); 
-    showMessage("Timer started! Good luck with your study session", "success");
+    showMessage("Timer started! Keep up the focus! 🚀");
 }
 
 function resetTimer(completed = false) {
@@ -483,7 +553,6 @@ function resetTimer(completed = false) {
     
     display.classList.remove('pulse');
     
-    // Stop music and destroy player
     pauseMusic();
     if (youtubePlayer) {
         youtubePlayer.destroy();
@@ -499,16 +568,27 @@ function resetTimer(completed = false) {
     timeSelector.disabled = false; 
     youtubeLinkInput.disabled = false; 
     
+    musicToggleBtn.disabled = false;
+    volumeUpBtn.disabled = false;
+    volumeDownBtn.disabled = false;
+    
+    //Reset manual pause state
+    userManuallyPaused = false;
+    
+    // Reset playback time
+    currentPlaybackTime = 0;
+    stopPlaybackTracking();
+    
     updateMusicControlsVisibility();
     
-    // Reset alarm sound
+    // Stop any playing alarm
     alarmSound.pause();
     alarmSound.currentTime = 0;
     
     if (completed) {
+        // Completion message is already shown in nextPhase()
         display.textContent = "DONE!";
         statusDisplay.textContent = `${totalTimeMinutes/60} HOURS COMPLETED! GREAT WORK! 🥳`;
-        showMessage("Session completed! Great job! 🎉", "success");
     } else {
         statusDisplay.textContent = "Ready to Start";
         updateDisplay();
@@ -523,44 +603,35 @@ function initialize() {
     updateDisplay();
 }
 
-// Event Listeners
+//Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     console.log("✅ DOM loaded, initializing...");
     
-    // Check if YouTube API is loaded
     if (!window.YT) {
         console.log("⚠️ YouTube API not loaded, loading now...");
-        // Create and load YouTube IFrame API script
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     }
     
-    // Timer controls
     startBtn.addEventListener('click', startTimer);
     stopBtn.addEventListener('click', () => resetTimer(false)); 
-    
-    // Music controls
     musicToggleBtn.addEventListener('click', toggleMusic); 
     volumeUpBtn.addEventListener('click', () => changeVolume('up')); 
     volumeDownBtn.addEventListener('click', () => changeVolume('down')); 
     
-    // Settings
     timeSelector.addEventListener('change', initialize); 
     
-    // YouTube input changes
     youtubeLinkInput.addEventListener('input', function() {
         console.log("🎵 YouTube input changed:", this.value);
         updateMusicControlsVisibility();
         
-        // If there's a valid link and no player, pre-load it
         if (this.value.trim().length > 0 && !youtubePlayer) {
             loadVideoPlayer();
         }
     });
     
-    // Initialize the app
     initialize();
     
     console.log("✅ App initialized successfully");
